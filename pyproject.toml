@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-mcp"
+version = "0.1.0"
+description = "MCP server exposing quant-pulse market signals to AI agents"
+readme = "AGENTS.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "mcp>=1.29.0,<2.0.0",
+    "quant-pulse>=0.2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
