@@ -7,6 +7,8 @@ what keeps quant-pulse's OHLCV TTL cache warm across requests, unlike a
 stdio server spawned per session.
 """
 
+import argparse
+
 from mcp.server.fastmcp import FastMCP
 from quant_pulse.context import Context
 
@@ -16,7 +18,14 @@ from quant_mcp.tools import build_catalog, compute_snapshot
 _config = build_config()
 context = Context.from_dict(_config)
 
-mcp = FastMCP("quant-mcp", host="127.0.0.1", port=8000)
+
+def _parse_port() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8000)
+    return parser.parse_args().port
+
+
+mcp = FastMCP("quant-mcp", host="127.0.0.1", port=_parse_port())
 
 
 @mcp.tool()

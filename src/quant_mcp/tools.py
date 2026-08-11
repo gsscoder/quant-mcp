@@ -19,7 +19,7 @@ _VENUE_CLIENT_PATTERN = re.compile(r"^exchange/(\w+)_client$")
 
 def _derive_venue(handler_config: dict, services: dict) -> Optional[str]:
     """
-    Derive the venue a signal profile is wired to from its config.
+    it mDerive the venue a signal profile is wired to from its config.
 
     A profile is venue-bound only if its handler config references an
     'ohlcv_service'; that service's dependencies are inspected for a
