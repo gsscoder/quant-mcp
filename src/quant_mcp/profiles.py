@@ -42,6 +42,8 @@ def build_config() -> dict:
         ohlcv_service = f"{venue}_ohlcv"
         builder.ohlcv(ohlcv_service, using=[client_name, _CACHE_MANAGER])
 
+        builder.signal(f"markets_{venue}", "market_volume_signal", exchange_service=client_name)
+
         atr_profile = f"atr_{venue}"
         builder.signal(f"rsi_{venue}", "rsi_signal", ohlcv_service=ohlcv_service)
         builder.signal(atr_profile, "atr_signal", ohlcv_service=ohlcv_service)

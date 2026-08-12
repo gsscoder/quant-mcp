@@ -21,10 +21,13 @@ def _derive_venue(handler_config: dict, services: dict) -> Optional[str]:
     """
     it mDerive the venue a signal profile is wired to from its config.
 
-    A profile is venue-bound only if its handler config references an
-    'ohlcv_service'; that service's dependencies are inspected for a
-    venue client service (module path 'exchange/<venue>_client'). Profiles
-    with no 'ohlcv_service' (e.g. 'hello') have no venue.
+    A profile is venue-bound if its handler config references an
+    'ohlcv_service' (that service's dependencies are inspected for a venue
+    client service, module path 'exchange/<venue>_client'), or if it
+    references an 'exchange_service' directly (matched against the venue
+    client pattern with no '_using' indirection, since exchange_service
+    names the client service itself). Profiles with neither (e.g. 'hello')
+    have no venue.
 
     Args:
         handler_config: Raw signal profile config (e.g. config['signals'][name])
@@ -33,12 +36,16 @@ def _derive_venue(handler_config: dict, services: dict) -> Optional[str]:
         Venue name (e.g. 'hyperliquid'), or None if the profile isn't venue-bound
     """
     ohlcv_service_name = handler_config.get("ohlcv_service")
-    if not ohlcv_service_name:
-        return None
+    if ohlcv_service_name:
+        ohlcv_config = services.get(ohlcv_service_name, {})
+        for dep_name in ohlcv_config.get("_using", []):
+            match = _VENUE_CLIENT_PATTERN.match(services.get(dep_name, {}).get("_service", ""))
+            if match:
+                return match.group(1)
 
-    ohlcv_config = services.get(ohlcv_service_name, {})
-    for dep_name in ohlcv_config.get("_using", []):
-        match = _VENUE_CLIENT_PATTERN.match(services.get(dep_name, {}).get("_service", ""))
+    exchange_service_name = handler_config.get("exchange_service")
+    if exchange_service_name:
+        match = _VENUE_CLIENT_PATTERN.match(services.get(exchange_service_name, {}).get("_service", ""))
         if match:
             return match.group(1)
 
@@ -170,6 +177,39 @@ def compute_snapshot(
             )
 
     return {"snapshot": cells}
+
+
+def list_markets(context: Context, config: dict, venue: str, quote: str = "*", top: int = 100) -> dict:
+    """
+    Tradeable markets on a venue, ranked by 24h quote volume.
+
+    venue is matched case-insensitively against the venue names reported
+    by list_signals (e.g. 'kraken'). quote is the venue-native quote code
+    ('*' = all markets, no normalization). Mirrors compute_snapshot's
+    per-call isolation: never raises, returns an 'error' field instead.
+    """
+    profile = f"markets_{venue.lower()}"
+    if profile not in config["signals"]:
+        valid = sorted(name[len("markets_"):] for name in config["signals"] if name.startswith("markets_"))
+        return {
+            "venue": venue, "markets": None,
+            "error": f"Unknown venue '{venue}'. Valid venues: {', '.join(valid)}",
+            "computed_at": None,
+        }
+
+    try:
+        outcome = context.get_signal_handler(profile).compute_signal(quote, "list_markets", {"top": top})
+    except Exception as exc:  # noqa: BLE001 - never let this raise, mirrors compute_snapshot's per-cell isolation
+        return {"venue": venue, "markets": None, "error": str(exc), "computed_at": None}
+
+    if outcome.errors:
+        return {
+            "venue": venue, "markets": None,
+            "error": _format_outcome_errors(outcome.errors),
+            "computed_at": outcome.computed_at,
+        }
+
+    return {**outcome.result, "error": None, "computed_at": outcome.computed_at}
 
 
 def build_catalog(context: Context, config: dict) -> list[dict]:

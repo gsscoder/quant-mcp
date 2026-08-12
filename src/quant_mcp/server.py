@@ -12,6 +12,7 @@ import argparse
 from mcp.server.fastmcp import FastMCP
 from quant_pulse.context import Context
 
+from quant_mcp import tools
 from quant_mcp.profiles import build_config
 from quant_mcp.tools import build_catalog, compute_snapshot
 
@@ -45,6 +46,20 @@ def get_snapshot(targets: list[str], selections: list[dict], include_series: boo
     latest/regime fields.
     """
     return compute_snapshot(context, _config, targets, selections, include_series)
+
+
+@mcp.tool()
+def list_markets(venue: str, quote: str = "*", top: int = 100) -> dict:
+    """
+    Tradeable markets on a venue, richest first by 24h quote volume.
+
+    quote is the venue-native quote code ('ZUSD' on Kraken, 'USDT' on
+    Binance, 'USD' on Hyperliquid); '*' returns every market. Returned
+    symbols feed straight back into get_snapshot targets for that same
+    venue. top=-1 removes the cap. Volumes compare within one venue only,
+    not across venues.
+    """
+    return tools.list_markets(context, _config, venue, quote, top)
 
 
 def main() -> None:
