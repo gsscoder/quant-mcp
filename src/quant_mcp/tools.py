@@ -179,14 +179,23 @@ def compute_snapshot(
     return {"snapshot": cells}
 
 
-def list_markets(context: Context, config: dict, venue: str, quote: str = "*", top: int = 100) -> dict:
+def list_markets(
+    context: Context,
+    config: dict,
+    venue: str,
+    quote: str = "*",
+    top: int = 100,
+    exclude_stable_fiat: bool = False,
+) -> dict:
     """
     Tradeable markets on a venue, ranked by 24h quote volume.
 
     venue is matched case-insensitively against the venue names reported
     by list_signals (e.g. 'kraken'). quote is the venue-native quote code
-    ('*' = all markets, no normalization). Mirrors compute_snapshot's
-    per-call isolation: never raises, returns an 'error' field instead.
+    ('*' = all markets, no normalization). exclude_stable_fiat drops pairs
+    where both legs are stablecoin/fiat (e.g. USDT/USDC, EUR/USD). Mirrors
+    compute_snapshot's per-call isolation: never raises, returns an 'error'
+    field instead.
     """
     profile = f"markets_{venue.lower()}"
     if profile not in config["signals"]:
@@ -198,7 +207,9 @@ def list_markets(context: Context, config: dict, venue: str, quote: str = "*", t
         }
 
     try:
-        outcome = context.get_signal_handler(profile).compute_signal(quote, "list_markets", {"top": top})
+        outcome = context.get_signal_handler(profile).compute_signal(
+            quote, "list_markets", {"top": top, "exclude_stable_fiat": exclude_stable_fiat}
+        )
     except Exception as exc:  # noqa: BLE001 - never let this raise, mirrors compute_snapshot's per-cell isolation
         return {"venue": venue, "markets": None, "error": str(exc), "computed_at": None}
 

@@ -218,7 +218,27 @@ def test_list_markets_top_param_flows_through_to_request():
 
     list_markets(context, config, "kraken", top=5)
 
-    assert context.proxy.last_request == {"top": 5}
+    assert context.proxy.last_request == {"top": 5, "exclude_stable_fiat": False}
+
+
+def test_list_markets_exclude_stable_fiat_flows_through_to_request():
+    # REQ: the 'exclude_stable_fiat' argument is forwarded unmodified in the request dict passed to compute_signal.
+    config = build_config()
+    context = _FakeMarketsContext(_SAMPLE_MARKETS_RESULT)
+
+    list_markets(context, config, "kraken", exclude_stable_fiat=True)
+
+    assert context.proxy.last_request == {"top": 100, "exclude_stable_fiat": True}
+
+
+def test_list_markets_exclude_stable_fiat_defaults_to_false():
+    # REQ: 'exclude_stable_fiat' defaults to False when not supplied by the caller.
+    config = build_config()
+    context = _FakeMarketsContext(_SAMPLE_MARKETS_RESULT)
+
+    list_markets(context, config, "kraken")
+
+    assert context.proxy.last_request["exclude_stable_fiat"] is False
 
 
 @pytest.mark.skip(reason="requires live network access to Kraken's public API")

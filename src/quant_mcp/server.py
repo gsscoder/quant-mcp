@@ -49,17 +49,23 @@ def get_snapshot(targets: list[str], selections: list[dict], include_series: boo
 
 
 @mcp.tool()
-def list_markets(venue: str, quote: str = "*", top: int = 100) -> dict:
+def list_markets(
+    venue: str,
+    quote: str = "*",
+    top: int = 100,
+    exclude_stable_fiat: bool = False,
+) -> dict:
     """
     Tradeable markets on a venue, richest first by 24h quote volume.
 
     quote is the venue-native quote code ('ZUSD' on Kraken, 'USDT' on
     Binance, 'USD' on Hyperliquid); '*' returns every market. Returned
     symbols feed straight back into get_snapshot targets for that same
-    venue. top=-1 removes the cap. Volumes compare within one venue only,
-    not across venues.
+    venue. top=-1 removes the cap. exclude_stable_fiat=True drops pairs
+    where both legs are stablecoin/fiat (e.g. USDT/USDC, EUR/USD), cutting
+    peg noise. Volumes compare within one venue only, not across venues.
     """
-    return tools.list_markets(context, _config, venue, quote, top)
+    return tools.list_markets(context, _config, venue, quote, top, exclude_stable_fiat)
 
 
 def main() -> None:
