@@ -36,6 +36,7 @@ The development documents are in the `memory-bank` dir — they primarily focus 
 - Require full type annotations on all functions; only use `Optional[T]` when `None` has explicit semantic meaning, not as a generic default
 
 ## Operational Rules:
+- If you're Claude Code, you may have specialized subagents available for many use cases — check `.claude/agents/` and prefer delegating to a matching one over doing the work directly
 - Read files in `memory-bank` only when required by the current task; scan filenames first and read file contents only if they are relevant to the task
 - Review/audit/report requests end at the report; fixing findings needs its own separate request — authorization never carries across turns
 - NEVER update `AGENTS.md` without an explicit request
